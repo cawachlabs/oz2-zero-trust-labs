@@ -1,0 +1,16 @@
+# Terraform/OpenTofu
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+
+# Keys & secrets — never committed; passwords live in your Key Vault
+*.key
+*.pem
+*.p12
+*.db
+
+# OS noise
+.DS_Store
+Thumbs.db

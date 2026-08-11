@@ -1,0 +1,37 @@
+# ============================================================================
+# Your lab settings. Copy this file, then edit the values below:
+#     cp terraform.tfvars.example terraform.tfvars
+# (terraform.tfvars is gitignored — your values never get committed.)
+# ============================================================================
+
+# Leave as-is. The one resource group that holds the whole lab —
+# `tofu destroy` (or deleting this group) removes everything.
+resource_group_name = "rg-meridian-ziti-lab-01"
+
+# REQUIRED — your SSH PUBLIC key (how you'll log in to the lab VMs).
+#   Already have one?   Print it:        cat ~/.ssh/id_ed25519.pub
+#                       (Windows:        Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub)
+#   Don't have one?     Create it:       ssh-keygen -t ed25519
+#                       Print it:        Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub
+#                       then print it with the command above.
+# Paste the ENTIRE single line here — it starts with "ssh-ed25519".
+# Only the .pub file! The file without .pub is your PRIVATE key — never share it.
+ssh_public_key      = "ssh-ed25519 AAAA...your-key-here... you@workstation"
+
+# Leave as-is. SSH is open to the internet but accepts ONLY your key above —
+# no passwords. (Why open? Most home internet has a changing/shared IP, and
+# locking to it would break your access next session.)
+# OPTIONAL: if your IP never changes, you can tighten this to "<your-ip>/32"
+# — find yours with:  curl ifconfig.me
+allowed_ssh_cidr    = "0.0.0.0/0"
+
+# REQUIRED — your name or handle. Goes into the "owner" tag on every resource,
+# so you can always tell which cloud resources (and costs) are yours.
+owner               = "your-name"
+
+# REQUIRED — a short handle that makes your controllers' DNS names unique:
+#   ctrl1-<dns_prefix>.eastus.cloudapp.azure.com   (and cus / weu the same way)
+# Azure requires DNS names to be unique per region, so plain "ctrl1" is taken —
+# include something yours, e.g. "meridian-jdoe". Lowercase letters, numbers,
+# hyphens only. `tofu apply` prints your three full names when it finishes.
+dns_prefix          = "meridian-yourhandle"
