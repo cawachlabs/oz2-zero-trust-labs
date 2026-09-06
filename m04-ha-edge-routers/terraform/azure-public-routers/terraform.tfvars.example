@@ -1,0 +1,17 @@
+# ============================================================================
+# Meridian Logistics — M04 Public Edge Routers settings.
+# Copy this file to terraform.tfvars:
+#     cp terraform.tfvars.example terraform.tfvars
+# ============================================================================
+
+subscription_id     = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+resource_group_name = "rg-meridian-ziti-lab-01"
+
+# REQUIRED — your SSH PUBLIC key (same as M03)
+ssh_public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@machine"
+
+allowed_ssh_cidr    = "0.0.0.0/0"
+owner               = "yourname"
+
+# REQUIRED — same handle as M03
+dns_prefix          = "meridian-yourname"
