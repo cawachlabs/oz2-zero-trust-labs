@@ -10,6 +10,8 @@ crash.log
 *.pem
 *.p12
 *.db
+# OpenZiti enrollment tokens (single-use secrets) - M06 writes er-pp-01.jwt next to its compose files
+*.jwt
 
 # OS noise
 .DS_Store

@@ -1,0 +1,24 @@
+# M06 additions to the official OpenZiti router compose.
+#
+# compose.yml in this folder is OpenZiti's own file, unmodified, from
+#   https://get.openziti.io/dist/docker-images/ziti-router/compose.yml
+# Leave it alone and make changes here instead - `docker compose` merges both files automatically.
+#
+# This override adds two things:
+#   1. partner-portal - an nginx container on the same compose network, so the router reaches it by
+#      its service name. The host.v1 config (partner-portal-host.json) points at partner-portal:80.
+#   2. a fixed container name and hostname for the router, matching ZITI_ROUTER_ADVERTISED_ADDRESS in .env.
+#
+# Run from this folder:  docker compose up -d
+
+services:
+  ziti-router1:
+    container_name: er-pp-01
+    hostname: er-pp-01
+
+  partner-portal:
+    image: nginx:1.27-alpine
+    container_name: partner-portal
+    restart: unless-stopped
+    # No published port, on purpose: the only way to reach the portal is through the overlay,
+    # with er-pp-01 hosting it.

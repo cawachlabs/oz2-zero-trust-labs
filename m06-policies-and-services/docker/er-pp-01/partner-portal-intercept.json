@@ -1,0 +1,5 @@
+{
+  "protocols": ["tcp"],
+  "addresses": ["portal.meridian.internal"],
+  "portRanges": [{ "low": 80, "high": 80 }]
+}

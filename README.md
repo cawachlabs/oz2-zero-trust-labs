@@ -11,6 +11,8 @@ You build **Meridian Logistics**, a fictional company, a production-shaped zero-
 | Module | Contents |
 |---|---|
 | **M03 — HA Controllers** | [`m03-ha-controllers/terraform/azure-controllers/`](m03-ha-controllers/terraform/azure-controllers/) — OpenTofu for the whole lab substrate: one resource group, three regions (East US / Central US / West Europe), one Ubuntu 24.04 VM per region with static private IPs and real public DNS names |
+| **M04 — HA Edge Routers** | [`m04-ha-edge-routers/terraform/azure-public-routers/`](m04-ha-edge-routers/terraform/azure-public-routers/) — OpenTofu for the two public edge routers: `er-pub-01` in East US (M03's VNet) and `er-pub-02` in Central India (a new regional VNet) |
+| **M06 — Policies & Services** | [`m06-policies-and-services/docker/er-pp-01/`](m06-policies-and-services/docker/er-pp-01/) — Docker Compose for `er-pp-01`, the edge router that hosts the partner portal, plus the portal's service configs. Start with its [README](m06-policies-and-services/docker/er-pp-01/README.md) |
 
 More modules land here as the course ships them.
 
@@ -27,11 +29,12 @@ tofu init && tofu plan && tofu apply           # terraform works identically
 
 **Prerequisites:** an Azure subscription (the lab fits comfortably in pay-as-you-go; destroy when not in use), [OpenTofu](https://opentofu.org/) or Terraform ≥ 1.6, Azure CLI, an SSH keypair.
 
-**No secrets ever live in this repo** — your `terraform.tfvars` and state files are gitignored; everything OpenZiti (PKI, enrollment) is generated on the lab machines, by you, by hand. That's the course.
+**No secrets ever live in this repo** — your `terraform.tfvars`, state files and OpenZiti enrollment tokens (`*.jwt`) are gitignored; everything OpenZiti (PKI, enrollment) is generated on the lab machines, by you, by hand. That's the course.
 
 ## Licensing
 
-- **Code** (`*.tf`, `scripts/`) — [MIT](LICENSE)
+- **Code** (`*.tf`, `scripts/`, `compose.override.yml`, `.env`, `*.json`) — [MIT](LICENSE)
+- **Third-party:** `m06-policies-and-services/docker/er-pp-01/compose.yml` is OpenZiti's official router compose file, redistributed unmodified under its [Apache License 2.0](https://github.com/openziti/ziti/blob/main/LICENSE)
 - **Lab text, PDFs, diagrams** (`*.md`, `*.pdf`, images) — [CC BY-NC-ND 4.0](LICENSE-docs.md)
 - **Trademarks:** the CawachLabs name and logo are licensed under neither. Team training? **hello@cawachlabs.com**
 
