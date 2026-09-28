@@ -1,0 +1,23 @@
+# M08 additions to OpenZiti's hosting-tunneler compose file.
+#
+# compose.yml in this folder is OpenZiti's own compose.host.yml, unmodified, from
+#   https://github.com/openziti/ziti-tunnel-sdk-c/blob/main/docker/compose.host.yml
+# Leave it alone and make changes here instead - `docker compose` merges both files automatically.
+#
+# This override adds two things:
+#   1. a fixed container name, so `docker logs ziti-host-pp-01` works, and a restart policy.
+#   2. the M06 network. partner-portal lives on er-pp-01_default, and the portal's host.v1 config
+#      points at partner-portal:80 - so this container joins that network and reaches the portal by
+#      name. `external: true` means this project uses the network and never creates or deletes it.
+#
+# Run from this folder:  docker compose up -d   (the M06 er-pp-01 project must be up first)
+
+services:
+  ziti-host:
+    container_name: ziti-host-pp-01
+    restart: unless-stopped
+
+networks:
+  default:
+    name: er-pp-01_default
+    external: true

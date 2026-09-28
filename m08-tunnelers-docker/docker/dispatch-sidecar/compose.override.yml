@@ -1,0 +1,39 @@
+# M08 additions to the official OpenZiti router compose.
+#
+# compose.yml in this folder is OpenZiti's own file, unmodified - the same file M06 uses for er-pp-01 -
+# from https://get.openziti.io/dist/docker-images/ziti-router/compose.yml
+# Leave it alone and make changes here instead - `docker compose` merges both files automatically.
+#
+# This override turns the router into a tproxy SIDECAR and adds the app that uses it:
+#   1. the router - fixed name; the three settings the router README requires for tproxy mode
+#      (dns, user root, NET_ADMIN); and two bootstrap settings passed through from .env, because the
+#      official file hardcodes ZITI_BOOTSTRAP_CONFIG and has no DNS-range variable.
+#   2. dispatch - the app: a curl loop that shares the router's network namespace, so its traffic to
+#      yard.meridian.internal is intercepted by the router. It starts only once the router is healthy.
+#
+# Run from this folder:  docker compose up -d
+
+services:
+  ziti-router1:
+    container_name: er-sc-dispatch-01
+    hostname: er-sc-dispatch-01
+    dns:
+      - 127.0.0.1               # this router's Ziti resolver
+      - 1.1.1.1                 # any recursive resolver
+    user: root                  # required to create TPROXY routes in the container
+    cap_add:
+      - NET_ADMIN               # required to create TPROXY rules
+    environment:
+      ZITI_ROUTER_DNS_IP_RANGE: ${ZITI_ROUTER_DNS_IP_RANGE:-100.64.0.1/10}
+      ZITI_BOOTSTRAP_CONFIG: ${ZITI_BOOTSTRAP_CONFIG:-true}
+
+  dispatch:
+    image: ${DISPATCH_IMAGE:-curlimages/curl:8.22.0}
+    container_name: dispatch
+    network_mode: service:ziti-router1
+    depends_on:
+      ziti-router1:
+        condition: service_healthy
+    entrypoint: [ "sh", "-c" ]
+    command: [ "while true; do curl -s -o /dev/null -w 'yard: %{http_code}\\n' --max-time 3 http://yard.meridian.internal; sleep 5; done" ]
+    restart: unless-stopped
