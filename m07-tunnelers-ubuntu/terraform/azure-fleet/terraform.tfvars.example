@@ -1,0 +1,23 @@
+# ============================================================================
+# Meridian Logistics — M07 Linux tunneler fleet settings.
+# Copy this file to terraform.tfvars:
+#     Copy-Item terraform.tfvars.example terraform.tfvars
+# (terraform.tfvars is gitignored — your values never get committed.)
+# ============================================================================
+
+subscription_id     = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+resource_group_name = "rg-meridian-ziti-lab-01"
+
+# REQUIRED — your SSH PUBLIC key (same as M03/M04)
+ssh_public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@machine"
+
+# Key-only SSH. Tighten to "<your-ip>/32" if your IP never changes.
+allowed_ssh_cidr    = "0.0.0.0/0"
+owner               = "yourname"
+
+# REQUIRED — same handle as M03/M04
+dns_prefix          = "meridian-yourname"
+
+# Leave fleet_count at 1 here. Lab S02 Step 6 raises it on the command line:
+#     tofu apply -var fleet_count=3
+# fleet_count       = 1

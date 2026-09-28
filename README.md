@@ -13,6 +13,7 @@ You build **Meridian Logistics**, a fictional company, a production-shaped zero-
 | **M03 — HA Controllers** | [`m03-ha-controllers/terraform/azure-controllers/`](m03-ha-controllers/terraform/azure-controllers/) — OpenTofu for the whole lab substrate: one resource group, three regions (East US / Central US / West Europe), one Ubuntu 24.04 VM per region with static private IPs and real public DNS names |
 | **M04 — HA Edge Routers** | [`m04-ha-edge-routers/terraform/azure-public-routers/`](m04-ha-edge-routers/terraform/azure-public-routers/) — OpenTofu for the two public edge routers: `er-pub-01` in East US (M03's VNet) and `er-pub-02` in Central India (a new regional VNet) |
 | **M06 — Policies & Services** | [`m06-policies-and-services/docker/er-pp-01/`](m06-policies-and-services/docker/er-pp-01/) — Docker Compose for `er-pp-01`, the edge router that hosts the partner portal, plus the portal's service configs. Start with its [README](m06-policies-and-services/docker/er-pp-01/README.md) |
+| **M07 — Tunnelers on Ubuntu** | [`m07-tunnelers-ubuntu/terraform/azure-fleet/`](m07-tunnelers-ubuntu/terraform/azure-fleet/) — OpenTofu + cloud-init for the three-VM Linux tunneler fleet in East US: VM #1 you build by hand, VMs #2–#3 enroll themselves at first boot. Start with its [README](m07-tunnelers-ubuntu/terraform/azure-fleet/README.md) |
 
 More modules land here as the course ships them.
 
@@ -33,7 +34,7 @@ tofu init && tofu plan && tofu apply           # terraform works identically
 
 ## Licensing
 
-- **Code** (`*.tf`, `scripts/`, `compose.override.yml`, `.env`, `*.json`) — [MIT](LICENSE)
+- **Code** (`*.tf`, `*.tftpl`, `scripts/`, `compose.override.yml`, `.env`, `*.json`) — [MIT](LICENSE)
 - **Third-party:** `m06-policies-and-services/docker/er-pp-01/compose.yml` is OpenZiti's official router compose file, redistributed unmodified under its [Apache License 2.0](https://github.com/openziti/ziti/blob/main/LICENSE)
 - **Lab text, PDFs, diagrams** (`*.md`, `*.pdf`, images) — [CC BY-NC-ND 4.0](LICENSE-docs.md)
 - **Trademarks:** the CawachLabs name and logo are licensed under neither. Team training? **hello@cawachlabs.com**

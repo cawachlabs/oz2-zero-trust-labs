@@ -1,0 +1,25 @@
+#cloud-config
+# M07 fleet endpoint ${identity_name} — the exact steps you ran by hand on VM #1, as root, at first boot.
+# Rendered by main.tf (templatefile). Log on the box: /var/log/cloud-init-output.log
+
+write_files:
+  # Staging: /opt/openziti does not exist until the package is installed, so the token waits here.
+  - path: /var/lib/ziti-bootstrap/identity.jwt
+    encoding: b64
+    content: ${jwt_b64}
+    owner: root:root
+    permissions: '0400'
+
+runcmd:
+  # 1. The OpenZiti APT repo. The tunneler is published under the "${apt_suite}" suite (there is
+  #    no noble suite); the jammy build installs cleanly on 24.04.
+  - curl -sSLf https://get.openziti.io/tun/package-repos.gpg | gpg --batch --yes --dearmor --output /usr/share/keyrings/openziti.gpg
+  - echo "deb [signed-by=/usr/share/keyrings/openziti.gpg] https://packages.openziti.org/zitipax-openziti-deb-stable ${apt_suite} main" > /etc/apt/sources.list.d/openziti.list
+  # 2. Install (first boot races unattended-upgrades for the apt lock, so wait for it).
+  - apt-get -o DPkg::Lock::Timeout=600 update
+  - DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y ziti-edge-tunnel
+  # 3. Seed the token where the service looks, readable by the ziti service account only.
+  - install -o ziti -g ziti -m 0400 /var/lib/ziti-bootstrap/identity.jwt /opt/openziti/etc/identities/${identity_name}.jwt
+  - rm -rf /var/lib/ziti-bootstrap
+  # 4. Start now and at every boot. The unit's ExecStartPre enrolls the token and deletes it.
+  - systemctl enable --now ziti-edge-tunnel.service
