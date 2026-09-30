@@ -1,0 +1,57 @@
+# M09 Lab S03 Step 5 - the dispatch app with a tproxy sidecar (AKS).
+#
+# The sidecar half is the official Kubernetes sidecar guide's, with the image pinned:
+#   https://netfoundry.io/docs/openziti/how-to-guides/tunnelers/kubernetes/kubernetes-sidecar
+# The app container is ours: a glibc image (Debian), because glibc asks the nameservers in the
+# order listed - the DNS triplet below, and Lab S04 Drill 3, depend on that order.
+#
+# Before you apply it (Lab S03 Step 5):
+#   ziti edge enroll --jwt .\k8s-sidecar-01.jwt --out .\k8s-sidecar-01.json
+#   kubectl create namespace dispatch
+#   kubectl -n dispatch create secret generic sidecar-client-identity --from-file=.\k8s-sidecar-01.json
+# Then:
+#   kubectl -n dispatch apply -f dispatch-sidecar.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dispatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dispatch
+  template:
+    metadata:
+      labels:
+        app: dispatch
+    spec:
+      containers:
+        - name: app
+          image: buildpack-deps:bookworm-curl
+          command: ["sh", "-c", "while true; do curl -s -o /dev/null -w 'yard: %{http_code}\\n' --max-time 5 http://yard.meridian.internal; sleep 30; done"]
+        - name: ziti-tunnel
+          # The Go tunneler, pinned to the controllers' version (2.0.3) like every router in the course.
+          image: openziti/ziti-tunnel:2.0.3
+          args: ["tproxy"]
+          env:
+            - name: ZITI_IDENTITY_BASENAME
+              value: k8s-sidecar-01          # reads /netfoundry/k8s-sidecar-01.json from the Secret
+          volumeMounts:
+            - name: sidecar-client-identity
+              mountPath: /netfoundry
+              readOnly: true
+          securityContext:
+            capabilities:
+              add: [NET_ADMIN]               # required to create the TPROXY rules
+      # The DNS triplet - each line fixes a different class of names (Lab S04 Drill 3):
+      dnsPolicy: None                        # 1. don't let Kubernetes write resolv.conf
+      dnsConfig:
+        nameservers:
+          - 127.0.0.1                        # 2a. the sidecar's resolver first: overlay names
+          - 10.0.0.10                        # 2b. then kube-dns (fixed by the tofu module: tofu output kube_dns_ip)
+        searches:
+          - cluster.local                    # 3. short cluster names (kubernetes.default.svc) still resolve
+      volumes:
+        - name: sidecar-client-identity
+          secret:
+            secretName: sidecar-client-identity

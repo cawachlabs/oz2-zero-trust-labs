@@ -1,0 +1,21 @@
+# M09 - values for the node proxy (Lab S03 Step 6: the nodeproxy release on AKS).
+#
+#   helm install nodeproxy openziti/ziti-edge-tunnel --namespace ziti --create-namespace `
+#     -f ziti-edge-tunnel-values.yaml --set-file zitiEnrollToken=.\aks-nodeproxy.jwt
+
+# The chart's default image is its appVersion (1.15.1). The course pins 1.19.1, as in M08.
+image:
+  tag: "1.19.1"
+  # The node proxy runs on the node's network and adds its resolver (100.64.0.2) to the node's
+  # systemd-resolved as a default DNS server. Without an upstream it answers only Ziti names, so a
+  # share of the node's ordinary lookups - the controllers' own names included - fail with
+  # "unknown node or service" (measured on AKS 2026-09-29: about 1 in 10). --dns-upstream hands
+  # every non-Ziti name to Azure's resolver, the one the node's eth0 already uses.
+  # These args replace the image's default command, so "run" comes first.
+  args: ["run", "--dns-upstream", "168.63.129.16"]
+
+pvc:
+  # The chart defaults to ReadWriteMany (one identity shared by every node's pod). Our cluster has one
+  # node, and its default StorageClass is a single-writer disk that cannot bind an RWX claim.
+  # Multi-node pools: keep ReadWriteMany and set storageClass to a class that supports it.
+  accessMode: ReadWriteOnce

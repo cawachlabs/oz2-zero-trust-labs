@@ -1,0 +1,20 @@
+# M09 Lab S03 Step 6 - send overlay names from CoreDNS to the node proxy (AKS).
+#
+# The ziti-edge-tunnel chart README's one-node example, with Meridian's zone. AKS merges every
+# *.server key of the coredns-custom ConfigMap into its CoreDNS config; 100.64.0.2 is the resolver
+# the node proxy (the nodeproxy-ziti-edge-tunnel DaemonSet, host network) answers on.
+#
+#   kubectl apply -f coredns-custom.yaml
+#   kubectl -n kube-system rollout restart deployment/coredns
+#
+# Multi-node clusters: intercept addresses are node-local, so add node-local-dns (Lab S03 Step 6 note).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  ziti.server: |
+    meridian.internal {
+      forward . 100.64.0.2
+    }

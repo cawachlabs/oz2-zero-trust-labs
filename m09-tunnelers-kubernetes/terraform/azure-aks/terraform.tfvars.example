@@ -1,0 +1,19 @@
+# ============================================================================
+# Meridian Logistics — M09 AKS cluster settings.
+# Copy this file to terraform.tfvars:
+#     Copy-Item terraform.tfvars.example terraform.tfvars
+# (terraform.tfvars is gitignored — your values never get committed.)
+# ============================================================================
+
+subscription_id     = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+resource_group_name = "rg-meridian-ziti-lab-01"
+owner               = "yourname"
+
+# REQUIRED — same handle as M03/M04
+dns_prefix          = "meridian-yourname"
+
+# The one system node. Standard_B2s (2 vCPU / 4 GB) is the smallest size an AKS system pool accepts.
+# vm_size           = "Standard_B2s"
+
+# No Owner / User Access Administrator on the lab resource group? Set this to false (README, Troubleshooting).
+# assign_subnet_role = true

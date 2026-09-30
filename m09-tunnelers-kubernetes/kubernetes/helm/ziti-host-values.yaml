@@ -1,0 +1,13 @@
+# M09 - values for every ziti-host release (Lab S03 Steps 4 and 7: wms-ziti-host on AKS,
+# telemetry-ziti-host on k3d).
+#
+# The chart's default image is its appVersion (1.15.1). The course pins the C tunneler's
+# current line instead - the same 1.19.1 that M08 field-built with Docker.
+#
+#   helm install wms-ziti-host openziti/ziti-host --namespace wms `
+#     -f ziti-host-values.yaml --set-file zitiEnrollToken=.\wms-host.jwt
+#
+# The chart has no PVC values: its identity claim is <release>-identity-pvc, ReadWriteOnce,
+# on the cluster's default StorageClass.
+image:
+  tag: "1.19.1"
