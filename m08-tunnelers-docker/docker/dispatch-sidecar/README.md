@@ -16,7 +16,7 @@ dispatch ──(same network namespace)──► er-sc-dispatch-01 ──► er-
 |---|---|
 | `compose.yml` | OpenZiti's official router compose, **unmodified** — the same file M06 uses for `er-pp-01` |
 | `compose.override.yml` | The M08 additions: the router's name; the three tproxy settings from the router README (`dns: 127.0.0.1, 1.1.1.1`, `user: root`, `NET_ADMIN`); two bootstrap settings passed through from `.env`; and the `dispatch` app, health-gated on the router |
-| `.env` | Image pins, the advertised name, port `3023`, `ZITI_ROUTER_MODE=tproxy`, `--private`, the DNS range and the app image |
+| `.env.example` | The template for your `.env`: image pins, the advertised name, port `3023`, `ZITI_ROUTER_MODE=tproxy`, `--private`, the DNS range and the app image. Copy it once (step 2); `.env` itself is gitignored, so the range you change in Lab S03 Drill 3 stays local |
 
 Keep the folder name: compose names the network (`dispatch-sidecar_default`) and volume
 (`dispatch-sidecar_ziti-router1`) after it.
@@ -35,6 +35,7 @@ PowerShell on the Docker Desktop machine, from this folder.
    (`edge-router-<id>-system`) that lets the router's identity use the router.
 2. **Run it** (Step 5):
    ```powershell
+   PS> Copy-Item .env.example .env     # first time only - then edit .env, never .env.example
    PS> $env:ZITI_ENROLL_TOKEN = (Get-Content .\er-sc-dispatch-01.jwt -Raw).Trim()
    PS> docker compose up -d        # chown -> router (health: starting) -> Healthy -> dispatch starts
    PS> Remove-Item Env:\ZITI_ENROLL_TOKEN
@@ -63,7 +64,7 @@ The router's log shows the interception being built: `creating interceptor` (mod
 ## Changing the DNS range (Lab S03 Drill 3A)
 
 The router writes `config.yml` **once**, on first start. To move the range: set `ZITI_ROUTER_DNS_IP_RANGE` and
-`ZITI_BOOTSTRAP_CONFIG=force` in `.env`, `docker compose up -d --force-recreate` (the log says `INFO: recreating
+`ZITI_BOOTSTRAP_CONFIG=force` in your `.env` (not `.env.example`), `docker compose up -d --force-recreate` (the log says `INFO: recreating
 config file: config.yml`), then set `ZITI_BOOTSTRAP_CONFIG=true` back. The new range stays.
 
 ## Cleanup
