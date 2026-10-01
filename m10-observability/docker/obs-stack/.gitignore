@@ -1,0 +1,6 @@
+# Local copies of the templates — your values
+.env
+controllers.yml
+# The scrape client cert + key, and the shipper's enrolled identity — credentials, never committed
+prom-scraper.*
+secrets/

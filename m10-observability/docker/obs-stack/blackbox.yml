@@ -1,0 +1,16 @@
+# M10 — the raft probe. /health-checks/controller/raft answers 200 on the leader and 429 on a follower.
+modules:
+  raft_leader:            # success = this controller is the leader
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: [200]
+      tls_config:
+        insecure_skip_verify: true
+  raft_member:            # success = this controller answers as a cluster member, leader or follower
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: [200, 429]
+      tls_config:
+        insecure_skip_verify: true

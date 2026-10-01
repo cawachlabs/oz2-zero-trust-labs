@@ -1,0 +1,8 @@
+# M10 - the three controllers' metrics + raft-probe listeners.
+# Copy this file to controllers.yml (gitignored) and put your M03 FQDNs in it:
+#   PowerShell:  Copy-Item controllers.yml.example controllers.yml
+# Both Prometheus jobs read controllers.yml: the metrics scrape and the raft probes (prometheus.yml).
+- targets:
+    - ctrl1-<dns_prefix>.eastus.cloudapp.azure.com:2112
+    - ctrl2-<dns_prefix>.centralus.cloudapp.azure.com:2112
+    - ctrl3-<dns_prefix>.westeurope.cloudapp.azure.com:2112

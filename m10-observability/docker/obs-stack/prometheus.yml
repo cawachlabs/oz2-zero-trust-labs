@@ -1,0 +1,46 @@
+# M10 — Prometheus. Three jobs, one target list (controllers.yml).
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  # The controllers' own exposition. Routers report to the controllers, so these three targets observe the
+  # whole network — no per-router exporter. Shape from the OpenZiti Prometheus doc.
+  - job_name: ziti-controllers
+    scheme: https
+    metrics_path: /metrics
+    honor_labels: true
+    honor_timestamps: true
+    file_sd_configs:
+      - files: [/etc/prometheus/controllers.yml]
+    tls_config:
+      cert_file: /etc/prometheus/prom-scraper.cert
+      key_file: /etc/prometheus/prom-scraper.key
+      insecure_skip_verify: true    # the docs' own example: the controllers' cert chains to the lab PKI, which Prometheus doesn't trust
+
+  # The raft leader probe, twice: "is this one the leader?" (200 only) and "is it answering at all?" (200 or 429).
+  - job_name: raft-leader
+    metrics_path: /probe
+    params:
+      module: [raft_leader]
+    file_sd_configs:
+      - files: [/etc/prometheus/controllers.yml]
+    relabel_configs: &probe
+      - source_labels: [__address__]
+        regex: (.+)
+        target_label: __param_target
+        replacement: https://${1}/health-checks/controller/raft
+      - source_labels: [__address__]
+        regex: ([^-.:]+).*
+        target_label: controller             # ctrl1, ctrl2, ctrl3
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  - job_name: raft-member
+    metrics_path: /probe
+    params:
+      module: [raft_member]
+    file_sd_configs:
+      - files: [/etc/prometheus/controllers.yml]
+    relabel_configs: *probe

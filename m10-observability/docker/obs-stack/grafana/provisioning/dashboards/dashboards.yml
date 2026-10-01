@@ -1,0 +1,8 @@
+# M10 — load every dashboard JSON in /var/lib/grafana/dashboards (mounted from ./grafana/dashboards).
+apiVersion: 1
+providers:
+  - name: meridian
+    type: file
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

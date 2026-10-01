@@ -1,0 +1,436 @@
+{
+  "uid": "meridian-overlay-health",
+  "title": "Meridian Overlay Health",
+  "description": "M10 Lab S03 - one panel per line of Meridian's written health definition (Lesson 01's SLO table).",
+  "tags": [
+    "meridian",
+    "openziti",
+    "m10"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "1 · Leader & quorum",
+      "description": "SLO: one leader, quorum intact. The raft probe answers 200 on the leader and 429 on a follower (blackbox, every 30 s). Expect leader: <one controller> and 3 members answering. Raw source: ziti ops cluster list.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (controller) (probe_success{job=\"raft-leader\"}) == 1",
+          "legendFormat": "leader: {{controller}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "sum(probe_success{job=\"raft-member\"})",
+          "legendFormat": "members answering",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "2 · Routers reporting",
+      "description": "SLO: every router online. Counts the routers whose metrics reached the controllers in the last report (each router reports edge connections). Raw source: ziti edge list edge-routers.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(count by (source_id) (ziti_edge_connections))",
+          "legendFormat": "routers",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "5 · Terminators / services",
+      "description": "SLO: every service has somewhere to land. Latest entity counts from the leader (entityCount events, every 60 s, via the shipper). Raw source: ziti fabric list terminators.",
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "ziti-events"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "namespace:entityCount",
+          "timeField": "timestamp",
+          "metrics": [
+            {
+              "id": "1",
+              "type": "max",
+              "field": "counts.terminators"
+            },
+            {
+              "id": "2",
+              "type": "max",
+              "field": "counts.services"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "id": "3",
+              "type": "date_histogram",
+              "field": "timestamp",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "none",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max counts.terminators"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "terminators"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max counts.services"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "services"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "6 · Fleet connected",
+      "description": "SLO: endpoints online. Edge connections across all routers (identities with a live connection to a router). Raw source: ziti fabric inspect identity-connection-statuses / ZAC identity list.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (source_id) (ziti_edge_connections))",
+          "legendFormat": "edge connections",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "3 · Link latency p99 (ms)",
+      "description": "SLO: data-plane latency. Each router's p99 router-to-router link latency. OpenZiti exports this 'histogram' with quantiles in the le label (le=\"0.99\" is the p99, in nanoseconds); a value of 8888888888888 is a placeholder, filtered out. Raw source: ziti fabric list links.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (source_id) (ziti_link_latency_bucket{le=\"0.99\"} < 1e12) / 1e6",
+          "legendFormat": "{{source_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "4 · Service dials — failures vs successes",
+      "description": "SLO: no sustained dial failures. Service events (per service, per minute, from every controller via the shipper). Failures = every event_type except service.dial.success. Raw source: ziti fabric stream events --services.",
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "ziti-events"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "failures",
+          "query": "namespace:service AND NOT event_type:\"service.dial.success\"",
+          "timeField": "timestamp",
+          "metrics": [
+            {
+              "id": "1",
+              "type": "sum",
+              "field": "count"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "timestamp",
+              "settings": {
+                "interval": "1m"
+              }
+            }
+          ]
+        },
+        {
+          "refId": "B",
+          "alias": "successes",
+          "query": "namespace:service AND event_type:\"service.dial.success\"",
+          "timeField": "timestamp",
+          "metrics": [
+            {
+              "id": "1",
+              "type": "sum",
+              "field": "count"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "id": "2",
+              "type": "date_histogram",
+              "field": "timestamp",
+              "settings": {
+                "interval": "1m"
+              }
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failures"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "7 · Edge connect failures (per s)",
+      "description": "Security signal: failed edge connections at the routers (bad, expired or unauthorized client certs). Baseline is zero or a trickle. Raw source: the routers' logs.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (source_id) (ziti_edge_connect_failures))",
+          "legendFormat": "failures/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "8 · Control-plane messages (per s)",
+      "description": "Control-plane load: messages the routers send each controller (ctrl.rx.msgrate). The leader carries the most. Raw source: the cluster member list.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (source_id) (ziti_ctrl_rx_msgrate)",
+          "legendFormat": "{{source_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

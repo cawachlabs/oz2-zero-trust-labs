@@ -1,0 +1,108 @@
+# M10 Lab S03 — the observability stack, on the Docker Desktop host.
+#
+#   prometheus  scrapes the three controllers' /metrics over HTTPS with the prom-scraper client cert
+#   blackbox    probes /health-checks/controller/raft on each controller (200 = leader, 429 = follower)
+#   grafana     the Meridian Overlay Health dashboard (provisioned from ./grafana)
+#   elasticsearch + kibana   a single-node event store — LAB-GRADE: no security, never run it like this in production
+#   shipper     one event stream per controller (ziti fabric stream events) -> Elasticsearch
+#
+# Before the first `docker compose up -d`: copy .env.example to .env, list your controllers in
+# controllers.yml, and put prom-scraper.cert/.key here and secrets/obs-shipper.json in place (README).
+name: obs-stack
+
+services:
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_TAG}
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./controllers.yml:/etc/prometheus/controllers.yml:ro
+      - ./prom-scraper.cert:/etc/prometheus/prom-scraper.cert:ro
+      - ./prom-scraper.key:/etc/prometheus/prom-scraper.key:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  blackbox:
+    image: prom/blackbox-exporter:${BLACKBOX_TAG}
+    container_name: blackbox
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_TAG}
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/meridian-overlay-health.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - elasticsearch
+    restart: unless-stopped
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_TAG}
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"      # lab-grade only
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_TAG}   # must match Elasticsearch exactly
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  shipper:
+    # 2.0.7, not the controllers' 2.0.3: the 2.0.3 CLI's certificate logins are refused on the next call
+    # (401) — measured 2026-10-01. The shipper logs in with its own cert identity, never a password.
+    image: openziti/ziti-cli:${ZITI_CLI_TAG}
+    container_name: shipper
+    entrypoint: ["bash", "/shipper/ship.sh"]
+    environment:
+      HOME: /tmp
+      CONTROLLERS: ${CONTROLLERS}
+      ES_URL: http://elasticsearch:9200
+      ES_INDEX: ziti-events
+    volumes:
+      - ./shipper:/shipper:ro
+      - ./secrets/obs-shipper.json:/run/obs/obs-shipper.json:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  es-data:

@@ -1,0 +1,1 @@
+{"attributes":{"name":"Ziti events","timeFieldName":"timestamp","title":"ziti-events*"},"id":"ziti-events","managed":false,"references":[],"type":"index-pattern","typeMigrationVersion":"8.0.0"}

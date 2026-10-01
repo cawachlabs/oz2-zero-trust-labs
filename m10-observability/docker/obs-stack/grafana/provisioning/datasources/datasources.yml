@@ -1,0 +1,17 @@
+# M10 — the dashboard's two data sources. The UIDs are fixed so dashboard.json can name them.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+  - name: Ziti events
+    uid: ziti-events
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    jsonData:
+      index: ziti-events
+      timeField: timestamp
