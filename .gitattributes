@@ -1,0 +1,4 @@
+# Files that run on Linux (containers, cloud-init) must keep LF line endings,
+# even when the repo is cloned on Windows with core.autocrlf=true.
+*.sh     text eol=lf
+*.tftpl  text eol=lf
