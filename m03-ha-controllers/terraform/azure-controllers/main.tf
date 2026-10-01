@@ -127,6 +127,24 @@ resource "azurerm_network_security_group" "ctrl" {
     source_address_prefix      = var.allowed_ssh_cidr
     destination_address_prefix = "*"
   }
+
+  # M10: the controllers' metrics + raft-probe listener (:2112), from ONE address only —
+  # the workstation that runs Prometheus. Off until metrics_source_cidr is set (M10 Lab S03).
+  # The endpoint is cert-gated too; the rule keeps it from being advertised to the internet.
+  dynamic "security_rule" {
+    for_each = var.metrics_source_cidr == "" ? [] : [var.metrics_source_cidr]
+    content {
+      name                       = "AllowMetricsScrape"
+      priority                   = 120
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "2112"
+      source_address_prefix      = security_rule.value
+      destination_address_prefix = "*"
+    }
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "ctrl" {
@@ -145,8 +163,8 @@ resource "azurerm_public_ip" "ctrl" {
   # Free Azure DNS name: ctrl1-<dns_prefix>.eastus.cloudapp.azure.com — the
   # controllers' advertise addresses. Real DNS, resolvable from anywhere
   # (your workstation, future M04 routers) — no /etc/hosts editing, ever.
-  domain_name_label   = "${each.value.ctrl}-${var.dns_prefix}"
-  tags                = local.common_tags
+  domain_name_label = "${each.value.ctrl}-${var.dns_prefix}"
+  tags              = local.common_tags
 }
 
 resource "azurerm_network_interface" "ctrl" {
