@@ -1,0 +1,85 @@
+# M10 Lab S03 — standalone Elastic Agent on each controller VM: ONE agent, three inputs, pushing OUT to
+# Elasticsearch on AKS. Nothing listens for it on the controller: the metrics listener is bound to
+# 127.0.0.1, and the agent reads it, the events log and the raft probe locally.
+#
+# Install as /etc/elastic-agent/elastic-agent.yml on each controller, after replacing:
+#   __ES_HOST__   the Elasticsearch load balancer IP (Lab S03 Step 3)
+#   __API_KEY__   this controller's own write-only API key, as id:key (Step 4)
+#   __CTRL__      ctrl1 / ctrl2 / ctrl3
+outputs:
+  default:
+    type: elasticsearch
+    hosts: ["https://__ES_HOST__:9200"]
+    api_key: "__API_KEY__"
+    ssl.certificate_authorities: ["/etc/elastic-agent/meridian-es-ca.crt"]
+
+agent.monitoring:
+  enabled: false          # the agent's own health metrics would need more than a write-only key
+
+inputs:
+  # 1 · The controller's event log (the events: block from Step 2), one JSON object per line.
+  - id: ziti-events
+    type: filestream
+    use_output: default
+    data_stream.namespace: default
+    streams:
+      - id: ziti-events-__CTRL__
+        data_stream.dataset: ziti.events
+        paths: ["/var/log/ziti/events.log"]
+        parsers:
+          - ndjson:
+              target: "ziti"
+              add_error_key: true
+        processors:
+          # entityCount events carry "routers" AND "routers.edge"; Elasticsearch reads the dot as a path,
+          # can't map routers as both a number and an object, and rejects the event (measured).
+          - script:
+              lang: javascript
+              source: >
+                function process(event) {
+                  var c = event.Get("ziti.counts");
+                  if (!c) return;
+                  var o = {};
+                  for (var k in c) { o[k.replace(/\./g, "_")] = c[k]; }
+                  event.Delete("ziti.counts");
+                  event.Put("ziti.counts", o);
+                }
+
+  # 2 · The controller's metrics, scraped from the localhost-only listener with the scrape client cert.
+  #     Only the series the dashboard uses — all ~2,650 a minute per controller would swamp the store.
+  - id: ziti-metrics
+    type: prometheus/metrics
+    use_output: default
+    data_stream.namespace: default
+    streams:
+      - metricsets: ["collector"]
+        data_stream.dataset: ziti.metrics
+        hosts: ["https://127.0.0.1:2112"]
+        metrics_path: /metrics
+        period: 60s
+        ssl.certificate: /etc/elastic-agent/prom-scraper.cert
+        ssl.key: /etc/elastic-agent/prom-scraper.key
+        ssl.verification_mode: none          # 127.0.0.1 isn't in the controller cert's names
+        metrics_filters:
+          include:
+            - "ziti_edge_connections"
+            - "ziti_edge_connect_failures"
+            - "ziti_ctrl_rx_msgrate"
+
+  # 3 · The raft probe. ONE monitor per input in agent mode (measured: a second stream in the same input
+  #     never runs), and one is enough: up (200) = the leader; down with 429 = a follower that answers;
+  #     down with no status code = not answering.
+  - id: ziti-raft-probe
+    type: synthetics/http
+    use_output: default
+    data_stream.namespace: default
+    streams:
+      - id: raft-__CTRL__
+        type: http                           # the monitor type — synthetics streams need it (measured)
+        data_stream.dataset: http
+        name: raft __CTRL__
+        schedule: "@every 30s"
+        urls: ["https://127.0.0.1:2112/health-checks/controller/raft"]
+        ssl.verification_mode: none
+        check.response.status: [200]
+        tags: ["raft", "__CTRL__"]

@@ -1,0 +1,51 @@
+# M10 Lab S03 — the event store: one Elasticsearch node, run by the ECK operator, on the obs node pool.
+#
+# The ONE inbound port of the observability design is here, on AKS — never on the controllers:
+#   the HTTPS ingest endpoint (9200) behind an Azure load balancer that admits ONLY the three controllers'
+#   public IPs (loadBalancerSourceRanges). Security stays ON: TLS from ECK, and each controller's Elastic
+#   Agent authenticates with its own write-only API key.
+# Edit the three source ranges to your controllers' public IPs (nslookup <ctrlN-fqdn>).
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: meridian
+  namespace: obs
+spec:
+  version: 9.5.4
+  http:
+    service:
+      spec:
+        type: LoadBalancer
+        loadBalancerSourceRanges:
+          - 104.211.48.243/32     # ctrl1
+          - 52.173.167.16/32      # ctrl2
+          - 20.71.102.94/32       # ctrl3
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+          - ip: 9.169.64.63       # the load balancer IP Azure assigned (Lab S03 Step 3 — yours will differ)
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          nodeSelector:
+            meridian/pool: obs
+          containers:
+            - name: elasticsearch
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xms2g -Xmx2g"
+              resources:
+                requests: { memory: 4Gi, cpu: "1" }
+                limits: { memory: 4Gi }
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources:
+              requests:
+                storage: 20Gi

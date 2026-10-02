@@ -1,0 +1,13 @@
+# ============================================================================
+# Meridian Logistics — M10 observability node pool settings.
+# Copy this file to terraform.tfvars:
+#     Copy-Item terraform.tfvars.example terraform.tfvars
+# (terraform.tfvars is gitignored — your values never get committed.)
+# ============================================================================
+
+subscription_id     = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+resource_group_name = "rg-meridian-ziti-lab-01"
+owner               = "yourname"
+
+# 4 vCPU / 16 GB fits Elasticsearch, Kibana and Grafana.
+# vm_size           = "Standard_B4ms"

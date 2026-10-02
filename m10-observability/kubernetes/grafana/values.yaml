@@ -1,0 +1,159 @@
+# M10 Lab S03 — Grafana on AKS, reading Elasticsearch with a READ-ONLY user (grafana / grafana_reader role).
+# No public endpoint: a ClusterIP service, published to the overlay by ziti-host (Step 5).
+#   helm install grafana grafana/grafana -n obs -f values.yaml \
+#     --set-file dashboards.meridian.overlay-health.json=dashboards/meridian-overlay-health.json
+image:
+  tag: "13.2.3"
+
+nodeSelector:
+  meridian/pool: obs
+
+admin:
+  existingSecret: grafana-admin          # admin-user / admin-password (Step 4)
+
+envValueFrom:
+  GF_ES_PASSWORD:
+    secretKeyRef:
+      name: grafana-es
+      key: password
+  GF_ALERT_WEBHOOK:
+    secretKeyRef:
+      name: grafana-alert-webhook        # url (Step 4)
+      key: url
+
+persistence:
+  enabled: false                         # dashboards and data sources are provisioned from this file
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Ziti events
+        uid: ziti-events
+        type: elasticsearch
+        url: https://meridian-es-http.obs.svc:9200
+        basicAuth: true
+        basicAuthUser: grafana
+        secureJsonData:
+          basicAuthPassword: $GF_ES_PASSWORD
+        jsonData:
+          index: "logs-ziti.events-*"
+          timeField: "@timestamp"
+          tlsSkipVerify: true            # in-cluster hop to ECK's self-signed cert
+      - name: Ziti metrics
+        uid: ziti-metrics
+        type: elasticsearch
+        url: https://meridian-es-http.obs.svc:9200
+        basicAuth: true
+        basicAuthUser: grafana
+        secureJsonData:
+          basicAuthPassword: $GF_ES_PASSWORD
+        jsonData:
+          index: "metrics-ziti.metrics-*"
+          timeField: "@timestamp"
+          tlsSkipVerify: true
+      - name: Raft probes
+        uid: raft-probes
+        type: elasticsearch
+        url: https://meridian-es-http.obs.svc:9200
+        basicAuth: true
+        basicAuthUser: grafana
+        secureJsonData:
+          basicAuthPassword: $GF_ES_PASSWORD
+        jsonData:
+          index: "synthetics-http-*"
+          timeField: "@timestamp"
+          tlsSkipVerify: true
+
+# The Meridian Overlay Health dashboard, loaded from dashboards/ by the --set-file flag above.
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: meridian
+        folder: Meridian
+        type: file
+        disableDeletion: true
+        options:
+          path: /var/lib/grafana/dashboards/meridian
+
+# Alerting. The notification leaves Grafana over the INTERNET (outbound from AKS), not over the overlay —
+# so it still reaches you when the overlay is the thing that broke. Kibana's free (Basic) licence only
+# offers the Index and Server-log connectors, which is why the alerts live here (measured).
+alerting:
+  contactpoints.yaml:
+    apiVersion: 1
+    contactPoints:
+      - orgId: 1
+        name: meridian-oncall
+        receivers:
+          - uid: meridian-oncall-webhook
+            type: webhook                 # your team chat's incoming-webhook URL, from secret grafana-alert-webhook
+            settings:
+              url: $GF_ALERT_WEBHOOK
+              httpMethod: POST
+  policies.yaml:
+    apiVersion: 1
+    policies:
+      - orgId: 1
+        receiver: meridian-oncall
+        group_by: ["alertname"]
+        group_wait: 30s
+        group_interval: 2m
+        repeat_interval: 1h
+  rules.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: meridian-pipeline
+        folder: Meridian
+        interval: 1m
+        rules:
+          - uid: meridian-agent-silent
+            title: Controller agent stopped reporting
+            condition: C
+            for: 2m
+            noDataState: Alerting         # nothing at all arriving is the worst case, not "no data"
+            execErrState: Alerting
+            annotations:
+              summary: Fewer than 3 controllers pushed metrics in the last full minute — an agent, its host or its path to Elasticsearch is down.
+            data:
+              - refId: A
+                datasourceUid: ziti-metrics
+                relativeTimeRange: { from: 300, to: 0 }
+                model:
+                  refId: A
+                  query: "prometheus.metrics.ziti_ctrl_rx_msgrate:*"
+                  timeField: "@timestamp"
+                  metrics: [{ id: "1", type: cardinality, field: host.name }]
+                  bucketAggs: [{ id: "2", type: date_histogram, field: "@timestamp", settings: { interval: 1m, min_doc_count: "1", trimEdges: "1" } }]
+              - refId: B
+                datasourceUid: __expr__
+                model: { refId: B, type: reduce, expression: A, reducer: last }
+              - refId: C
+                datasourceUid: __expr__
+                model: { refId: C, type: threshold, expression: B, conditions: [{ evaluator: { type: lt, params: [3] } }] }
+          - uid: meridian-quorum-risk
+            title: Controller not answering its raft probe
+            condition: C
+            for: 2m
+            noDataState: Alerting
+            execErrState: Alerting
+            annotations:
+              summary: Fewer than 3 controllers answered the raft health check in the last full minute — one more loss and the cluster has no quorum.
+            data:
+              - refId: A
+                datasourceUid: raft-probes
+                relativeTimeRange: { from: 300, to: 0 }
+                model:
+                  refId: A
+                  query: "http.response.status_code:*"
+                  timeField: "@timestamp"
+                  metrics: [{ id: "1", type: cardinality, field: monitor.name }]
+                  bucketAggs: [{ id: "2", type: date_histogram, field: "@timestamp", settings: { interval: 1m, min_doc_count: "1", trimEdges: "1" } }]
+              - refId: B
+                datasourceUid: __expr__
+                model: { refId: B, type: reduce, expression: A, reducer: last }
+              - refId: C
+                datasourceUid: __expr__
+                model: { refId: C, type: threshold, expression: B, conditions: [{ evaluator: { type: lt, params: [3] } }] }

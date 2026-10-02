@@ -1,0 +1,27 @@
+# M10 Lab S03 — Kibana: the search side — data views and the saved "Failed circuits" search (alerts live in Grafana).
+# No public endpoint: it is a plain ClusterIP service, published to the overlay by ziti-host (Step 5),
+# so Alex reaches it through Ziti Desktop Edge. Kibana's own TLS is off — the overlay already encrypts
+# the whole path, and a self-signed cert would only add a browser warning.
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: meridian
+  namespace: obs
+spec:
+  version: 9.5.4
+  count: 1
+  elasticsearchRef:
+    name: meridian
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  podTemplate:
+    spec:
+      nodeSelector:
+        meridian/pool: obs
+      containers:
+        - name: kibana
+          resources:
+            requests: { memory: 1Gi, cpu: 500m }
+            limits: { memory: 2Gi }

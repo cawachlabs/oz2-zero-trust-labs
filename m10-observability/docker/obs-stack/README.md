@@ -1,5 +1,9 @@
 # M10 · obs-stack — Prometheus, Grafana and an event store for the overlay
 
+> **Local variant — not the course path (since 2026-10-02).** Lab S03 now pushes from an Elastic Agent on each controller to
+> Elasticsearch on AKS and opens no port on the controllers (see `../../README.md`). This stack pulls, so it needs `:2112` reachable
+> from your workstation — kept for study, not used by the lab guide.
+
 The observability plane for Module 10, Lab S03, on the Docker Desktop host (your workstation — the same host as M06
 and M08). It watches the three M03 controllers from outside: metrics over HTTPS with a client certificate, the raft
 leader probe, and every controller's event stream.
