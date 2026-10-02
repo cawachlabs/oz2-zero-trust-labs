@@ -18,12 +18,6 @@ variable "allowed_ssh_cidr" {
   default     = "0.0.0.0/0"
 }
 
-variable "metrics_source_cidr" {
-  description = "M10: the one address allowed to reach the controllers' metrics listener on :2112 — your workstation's public IP as <ip>/32 (curl.exe -s https://ifconfig.me). Empty = no rule (M03-M09)."
-  type        = string
-  default     = ""
-}
-
 variable "owner" {
   description = "Your name/handle — lands in the 'owner' tag on every resource."
   type        = string

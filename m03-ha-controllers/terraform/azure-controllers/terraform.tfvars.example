@@ -35,7 +35,3 @@ owner               = "your-name"
 # include something yours, e.g. "meridian-jdoe". Lowercase letters, numbers,
 # hyphens only. `tofu apply` prints your three full names when it finishes.
 dns_prefix          = "meridian-yourhandle"
-
-# M10 only - your workstation public IP, so Prometheus can scrape the controllers on :2112.
-# Leave unset (empty) for M03-M09. Find it with: curl.exe -s https://ifconfig.me
-# metrics_source_cidr = "203.0.113.10/32"
