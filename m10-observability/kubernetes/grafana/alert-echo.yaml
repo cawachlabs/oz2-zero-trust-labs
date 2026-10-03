@@ -1,0 +1,38 @@
+# M10 Lab S03 Step 7 — the alert receiver for the lab: a tiny HTTP echo server that logs every request it gets.
+# Grafana's webhook contact point posts FIRING / RESOLVED here (Step 10: kubectl -n obs logs -f deploy/alert-echo).
+# In production you point the contact point at your team chat instead (Grafana's slack / teams types) — the
+# message then leaves AKS over the internet, never over the overlay.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-echo
+  namespace: obs
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: alert-echo }
+  template:
+    metadata:
+      labels: { app: alert-echo }
+    spec:
+      nodeSelector:
+        meridian/pool: obs
+      containers:
+        - name: echo
+          image: mendhak/http-https-echo:39
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { memory: 64Mi, cpu: 50m }
+            limits: { memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-echo
+  namespace: obs
+spec:
+  selector: { app: alert-echo }
+  ports:
+    - port: 8080
+      targetPort: 8080
