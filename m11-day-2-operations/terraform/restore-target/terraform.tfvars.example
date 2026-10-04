@@ -1,0 +1,12 @@
+# ============================================================================
+# Meridian Logistics — M11 restore rig settings.
+# Copy this file to terraform.tfvars:
+#     Copy-Item terraform.tfvars.example terraform.tfvars
+# (terraform.tfvars is gitignored — your values never get committed.)
+# ============================================================================
+
+subscription_id  = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+owner            = "yourname"
+dns_prefix       = "meridian-yourname"          # same as your other modules
+ssh_public_key   = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@machine"
+allowed_ssh_cidr = "0.0.0.0/0"                  # better: "<your-public-ip>/32"
