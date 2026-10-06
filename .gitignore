@@ -17,5 +17,6 @@ crash.log
 .DS_Store
 Thumbs.db
 
-# M08 dispatch-sidecar: students copy .env.example to .env and edit it in Lab S03 Drill 3 - keep the copy local
-m08-tunnelers-docker/docker/dispatch-sidecar/.env
+# Settings files - every module: copy .env.example to .env and edit your copy; .env is never committed
+.env
+!.env.example

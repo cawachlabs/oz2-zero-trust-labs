@@ -16,7 +16,7 @@ partner-01 ──► er-pub-01 / er-pub-02 ──► ziti-host-pp-01 ──► p
 |---|---|
 | `compose.yml` | OpenZiti's own `compose.host.yml`, **unmodified**: the `ziti-host` image, a named volume for the identity, and `ZITI_ENROLL_TOKEN` passed through |
 | `compose.override.yml` | The M08 additions: container name `ziti-host-pp-01`, a restart policy, and the M06 network `er-pp-01_default` as an **external** network |
-| `.env` | `ZITI_HOST_TAG=1.19.1` — the image tag. The tunneler is on its own 1.x line; that it doesn't match the 2.0.3 routers is expected |
+| `.env.example` | copy it to `.env` once (`Copy-Item .env.example .env`; git ignores your copy) — `ZITI_HOST_TAG=1.19.1` — the image tag. The tunneler is on its own 1.x line; that it doesn't match the 2.0.3 routers is expected |
 
 Keep the folder name: compose names the project, and so the volume (`ziti-host-pp-01_ziti-host`), after it.
 
@@ -32,6 +32,7 @@ Every command is PowerShell on the Docker Desktop machine, from this folder. The
    ```
 2. **Run it** (Step 2):
    ```powershell
+   PS> Copy-Item .env.example .env          # once: your own settings copy
    PS> $env:ZITI_ENROLL_TOKEN = (Get-Content .\ziti-host-pp-01.jwt -Raw).Trim()
    PS> docker compose config          # read it first: no privileged, no cap_add, no devices, no host network
    PS> docker compose up -d

@@ -30,7 +30,7 @@ on-prem pair from M04. That's why it runs `--private` and why the partners' ingr
 |---|---|---|
 | `compose.yml` | OpenZiti's official router compose file, unmodified, from `https://get.openziti.io/dist/docker-images/ziti-router/compose.yml` | No — override it instead |
 | `compose.override.yml` | Adds the `partner-portal` nginx container on the same network and fixes the router's container name/hostname to `er-pp-01` | No |
-| `.env` | The settings compose reads automatically: image pinned to `2.0.3`, advertised address `er-pp-01`, host mode, `--private` | No |
+| `.env.example` | The settings, as shipped: image pinned to `2.0.3`, advertised address `er-pp-01`, host mode, `--private`. Copy it to `.env` once (`Copy-Item .env.example .env`); compose reads `.env` automatically, and git ignores your copy | No |
 | `partner-portal-intercept.json` | `intercept.v1` config — what the partner's tunneler intercepts: `portal.meridian.internal`, tcp `80` | No |
 | `partner-portal-host.json` | `host.v1` config — where `er-pp-01` sends the traffic: the container `partner-portal`, tcp `80` | No |
 
@@ -104,9 +104,10 @@ Every command is **PowerShell** on your Windows workstation. The plain `ziti` an
    $ export ZITI_ENROLL_TOKEN="$(cat ./er-pp-01.jwt)"
    ```
 
-6. Start both containers. Compose merges `compose.yml` + `compose.override.yml` and reads `.env` on its own.
+6. Start both containers. Compose merges `compose.yml` + `compose.override.yml` and reads `.env` on its own — make that copy first, once.
 
    ```powershell
+   PS> Copy-Item .env.example .env
    PS> docker compose up -d
    ```
 

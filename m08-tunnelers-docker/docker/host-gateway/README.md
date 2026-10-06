@@ -10,19 +10,20 @@ run a host tunneler — two intercepting tunnelers in one namespace compete for 
 | File | What it does |
 |---|---|
 | `compose.yml` | OpenZiti's own `compose.intercept.yml`, **unmodified**: `ziti-edge-tunnel` with `/dev/net/tun`, a named volume, the host's D-Bus socket (so it can program systemd-resolved), `network_mode: host`, `privileged: true` |
-| `.env` | `ZITI_EDGE_TUNNEL_TAG=1.19.1` |
+| `.env.example` | `ZITI_EDGE_TUNNEL_TAG=1.19.1` — copied to `.env` on the host (git ignores `.env`) |
 
 ## Steps
 
 ```powershell
 # workstation - the identity (erp-employees already admits #employee)
 PS> ziti edge create identity docker-host-01 -o .\docker-host-01.jwt -a employee
-PS> scp .\compose.yml .\.env .\docker-host-01.jwt <user>@<linux-docker-host>:~/host-gateway/
+PS> scp .\compose.yml .\.env.example .\docker-host-01.jwt <user>@<linux-docker-host>:~/host-gateway/
 ```
 
 ```bash
 # on the Linux Docker host
 $ cd ~/host-gateway
+$ cp .env.example .env                         # once: your own settings copy
 $ export ZITI_ENROLL_TOKEN="$(cat ./docker-host-01.jwt)"
 $ sudo -E docker compose up -d
 $ unset ZITI_ENROLL_TOKEN; rm ./docker-host-01.jwt
