@@ -1,0 +1,30 @@
+#cloud-config
+# M13 APAC WMS host — a web page (the WMS stand-in) and the tunneler that hosts it as meridian-wms.
+# The page names its region, so the acceptance check can see which host answered.
+
+write_files:
+  - path: /var/lib/ziti-bootstrap/identity.jwt
+    encoding: b64
+    content: ${jwt_b64}
+    owner: root:root
+    permissions: '0400'
+  - path: /var/www/html/index.html
+    content: |
+      <html><body><h1>Meridian WMS — APAC (Singapore)</h1><p>served by vm-wms-ap-01</p></body></html>
+
+runcmd:
+  # The WMS stand-in: nginx on port 80 (the host.v1 config of meridian-wms forwards to it).
+  - apt-get -o DPkg::Lock::Timeout=600 update
+  - DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y nginx
+  - cp /var/www/html/index.html /var/www/html/index.nginx-debian.html
+  # meridian-wms has ONE host config for both regions: it forwards to wms-hello-toy.wms.svc:80 (the name
+  # the AKS app has inside Kubernetes). Here that same name points at this machine.
+  - echo "127.0.0.1 wms-hello-toy.wms.svc" >> /etc/hosts
+  # The tunneler — M07's steps (the "${apt_suite}" suite; there is no noble suite).
+  - curl -sSLf https://get.openziti.io/tun/package-repos.gpg | gpg --batch --yes --dearmor --output /usr/share/keyrings/openziti.gpg
+  - echo "deb [signed-by=/usr/share/keyrings/openziti.gpg] https://packages.openziti.org/zitipax-openziti-deb-stable ${apt_suite} main" > /etc/apt/sources.list.d/openziti.list
+  - apt-get -o DPkg::Lock::Timeout=600 update
+  - DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=600 install -y ziti-edge-tunnel
+  - install -o ziti -g ziti -m 0400 /var/lib/ziti-bootstrap/identity.jwt /opt/openziti/etc/identities/${identity_name}.jwt
+  - rm -rf /var/lib/ziti-bootstrap
+  - systemctl enable --now ziti-edge-tunnel.service

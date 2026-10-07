@@ -88,17 +88,6 @@ resource "azurerm_network_security_group" "er_eus" {
     destination_address_prefix = "*"
   }
 
-  security_rule {
-    name                       = "AllowZitiLink"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "6004"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "er_eus" {
@@ -210,17 +199,6 @@ resource "azurerm_network_security_group" "er_cin" {
     destination_address_prefix = "*"
   }
 
-  security_rule {
-    name                       = "AllowZitiLink"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "6004"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "er_cin" {
