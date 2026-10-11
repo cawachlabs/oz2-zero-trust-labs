@@ -1,8 +1,8 @@
-# Advanced Zero Trust Architectures with OpenZiti 2.0 — Labs
+# Enterprise Zero Trust Architecture with OpenZiti 2.0 — Labs
 
-Hands-on labs, infrastructure-as-code, and cheat-sheets for the CawachLabs course **Advanced Zero Trust Architectures with OpenZiti 2.0** — by Girish Reddy.
+Hands-on labs, infrastructure-as-code, and cheat-sheets for the CawachLabs course **Enterprise Zero Trust Architecture with OpenZiti 2.0** — by Girish Reddy.
 
-**➡ Take the course:** [Advanced Zero Trust Architectures with OpenZiti 2.0 on Udemy](https://www.udemy.com/course/enterprise-zero-trust-architecture-openziti/?referralCode=6059ED344B582DE22AA9)
+**➡ Take the course:** [Enterprise Zero Trust Architecture with OpenZiti 2.0 on Udemy](https://www.udemy.com/course/enterprise-zero-trust-architecture-openziti/?referralCode=6059ED344B582DE22AA9)
 
 You build **Meridian Logistics**, a fictional company, a production-shaped zero-trust network: a three-region HA controller cluster, HA edge routers, identities/PKI, policies and services, tunnelers on Ubuntu/Docker/Kubernetes, observability, day-2 operations, an upgrade, and a multi-region capstone.
 
